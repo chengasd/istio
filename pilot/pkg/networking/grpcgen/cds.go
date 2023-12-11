@@ -21,6 +21,7 @@ import (
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	networking "istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pilot/pkg/model"
@@ -205,11 +206,30 @@ func (b *clusterBuilder) applyTrafficPolicy(c *cluster.Cluster, trafficPolicy *n
 func (b *clusterBuilder) applyLoadBalancing(c *cluster.Cluster, policy *networking.TrafficPolicy) {
 	switch policy.GetLoadBalancer().GetSimple() {
 	case networking.LoadBalancerSettings_ROUND_ROBIN, networking.LoadBalancerSettings_UNSPECIFIED:
-	// ok
+		// ok
+		applyRoundRobinLoadBalancer(c, policy.GetLoadBalancer())
 	default:
 		log.Warnf("cannot apply LbPolicy %s to %s", policy.LoadBalancer.GetSimple(), b.node.ID)
 	}
 	corexds.ApplyRingHashLoadBalancer(c, policy.GetLoadBalancer())
+}
+
+// applyRoundRobinLoadBalancer will set the LbPolicy and create an LbConfig for ROUND_ROBIN if used in LoadBalancerSettings
+func applyRoundRobinLoadBalancer(c *cluster.Cluster, loadbalancer *networking.LoadBalancerSettings) {
+	if loadbalancer.GetWarmupDurationSecs() != nil {
+		c.LbConfig = &cluster.Cluster_RoundRobinLbConfig_{
+			RoundRobinLbConfig: &cluster.Cluster_RoundRobinLbConfig{
+				SlowStartConfig: setSlowStartConfig(loadbalancer.GetWarmupDurationSecs()),
+			},
+		}
+	}
+}
+
+// setSlowStartConfig will set the warmupDurationSecs for LEAST_REQUEST and ROUND_ROBIN if provided in DestinationRule
+func setSlowStartConfig(dur *durationpb.Duration) *cluster.Cluster_SlowStartConfig {
+	return &cluster.Cluster_SlowStartConfig{
+		SlowStartWindow: dur,
+	}
 }
 
 func (b *clusterBuilder) applyTLS(c *cluster.Cluster, policy *networking.TrafficPolicy) {
