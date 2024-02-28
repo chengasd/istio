@@ -26,7 +26,8 @@
       "settings": {
         "files.eol": "\n",
         "go.useLanguageServer": true,
-        "go.lintTool": "golangci-lint"
+        "go.lintTool": "golangci-lint",
+        "go.version": "go1.20",
       }
     }
   }
