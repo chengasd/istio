@@ -57,6 +57,9 @@ import (
 	"istio.io/istio/pkg/security"
 	netutil "istio.io/istio/pkg/util/net"
 	"istio.io/istio/pkg/util/sets"
+
+	v32 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	v33 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 )
 
 // deltaConfigTypes are used to detect changes and trigger delta calculations. When config updates has ONLY entries
@@ -835,7 +838,9 @@ func applyLeastRequestLoadBalancer(c *cluster.Cluster, loadbalancer *networking.
 // setSlowStartConfig will set the warmupDurationSecs for LEAST_REQUEST and ROUND_ROBIN if provided in DestinationRule
 func setSlowStartConfig(dur *durationpb.Duration) *cluster.Cluster_SlowStartConfig {
 	return &cluster.Cluster_SlowStartConfig{
-		SlowStartWindow: dur,
+		SlowStartWindow:  dur,
+		Aggression:       &v32.RuntimeDouble{DefaultValue: 0.5},
+		MinWeightPercent: &v33.Percent{Value: 1},
 	}
 }
 

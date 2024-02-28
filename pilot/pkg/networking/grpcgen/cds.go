@@ -29,6 +29,9 @@ import (
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"istio.io/istio/pkg/config/host"
 	"istio.io/istio/pkg/util/sets"
+
+	v32 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	v33 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 )
 
 // BuildClusters handles a gRPC CDS request, used with the 'ApiListener' style of requests.
@@ -229,6 +232,8 @@ func applyRoundRobinLoadBalancer(c *cluster.Cluster, loadbalancer *networking.Lo
 func setSlowStartConfig(dur *durationpb.Duration) *cluster.Cluster_SlowStartConfig {
 	return &cluster.Cluster_SlowStartConfig{
 		SlowStartWindow: dur,
+		Aggression:       &v32.RuntimeDouble{DefaultValue: 0.5},
+		MinWeightPercent: &v33.Percent{Value: 1},
 	}
 }
 
